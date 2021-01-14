@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
+import cw
 
 
 class Net(nn.Module):
@@ -34,10 +35,14 @@ class Net(nn.Module):
         return output
 
 
-def train(args, model, device, train_loader, optimizer, epoch):
+def train(args, model, device, train_loader, optimizer, epoch,adversarial=False,adversary=None):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
+        if adversarial:
+            data=adversary(model,data,target,to_numpy=False)
+            data=data.to(device)
+            print("Adversarial Training Batch Id="+str(batch_idx))
         optimizer.zero_grad()
         output = model(data)
         loss = F.nll_loss(output, target)
@@ -79,6 +84,7 @@ def main():
                         help='input batch size for testing (default: 1000)')
     parser.add_argument('--epochs', type=int, default=14, metavar='N',
                         help='number of epochs to train (default: 14)')
+    parser.add_argument('--adv_epochs',type=int,default=10,metavar='N')
     parser.add_argument('--lr', type=float, default=1.0, metavar='LR',
                         help='learning rate (default: 1.0)')
     parser.add_argument('--gamma', type=float, default=0.7, metavar='M',
@@ -119,13 +125,19 @@ def main():
                        transform=transform)
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
+    input_box = (-0.1307 / 0.3081, (1 - 0.1307) / 0.3081)
+    adversary = cw.L2Adversary(targeted=False, confidence=0.0, search_steps=10, c_range=(1e-3, 1e10), box=input_box,
+                               optimizer_lr=5e-4)
 
     model = Net().to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
 
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
     for epoch in range(1, args.epochs + 1):
-        train(args, model, device, train_loader, optimizer, epoch)
+        if epoch>args.adv_epochs:
+            train(args, model, device, train_loader, optimizer, epoch,adversarial=True,adversary=adversary)
+        else:
+            train(args, model, device, train_loader, optimizer, epoch)
         test(model, device, test_loader)
         scheduler.step()
 

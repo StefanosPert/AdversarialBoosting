@@ -74,9 +74,9 @@ def make_cuda_consistent(refobj, *args):
     result_args = list()
     for v in args:
         cuda_state = get_cuda_state(v)
-        print(cuda_state)
-        print(ref_cuda_state)
-        print(v)
+        #print(cuda_state)
+        #print(ref_cuda_state)
+        #print(v)
         if cuda_state != ref_cuda_state:
             if isinstance(v, Variable):
                 raise ValueError('cannot change cuda state of a Variable')
