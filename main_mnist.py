@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
+from Trainer import Trainer
 import cw
 
 
@@ -99,6 +100,7 @@ def main():
                         help='how many batches to wait before logging training status')
     parser.add_argument('--save-model', action='store_true', default=False,
                         help='For Saving the current Model')
+    parser.add_argument('--logdir',type=str,default='./mnist.pt')
     args = parser.parse_args()
     use_cuda = not args.no_cuda and torch.cuda.is_available()
 
@@ -106,7 +108,7 @@ def main():
 
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    train_kwargs = {'batch_size': args.batch_size}
+    train_kwargs = {'batch_size': args.batch_size,'shuffle':True}
     test_kwargs = {'batch_size': args.test_batch_size}
     if use_cuda:
         cuda_kwargs = {'num_workers': 1,
@@ -125,6 +127,12 @@ def main():
                        transform=transform)
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
+
+    model = Net().to(device)
+    trainer=Trainer(model,device,train_loader,test_loader,args.epochs,args.adv_epochs,args.logdir)
+    trainer.run_train(args)
+
+    '''
     input_box = (-0.1307 / 0.3081, (1 - 0.1307) / 0.3081)
     adversary = cw.L2Adversary(targeted=False, confidence=0.0, search_steps=10, c_range=(1e-3, 1e10), box=input_box,
                                optimizer_lr=5e-4)
@@ -143,7 +151,7 @@ def main():
 
     if args.save_model:
         torch.save(model.state_dict(), "mnist_cnn.pt")
-
+    '''
 
 if __name__ == '__main__':
     main()

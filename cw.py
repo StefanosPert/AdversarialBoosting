@@ -219,7 +219,7 @@ class L2Adversary(object):
         # `scale_const` won't ruin the optimum ever found.
         self.repeat = (self.binary_search_steps >= 10)
 
-    def __call__(self, model, inputs, targets, to_numpy=True):
+    def __call__(self, model, inputs, targets, to_numpy=False):
         """
         Produce adversarial examples for ``inputs``.
 

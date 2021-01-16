@@ -1,6 +1,6 @@
 from main_mnist import Net
 import cw
-
+from pgd import PGD
 from torchvision import datasets, transforms
 import torch
 import matplotlib.pyplot as plt
@@ -38,9 +38,13 @@ if __name__ == '__main__':
     min=input[:].min()
 
     input_box=(-0.1307/0.3081,(1-0.1307)/0.3081)
-    adversary=cw.L2Adversary(targeted=False,confidence=0.0,search_steps=10,c_range=(1e-3, 1e10),box=input_box,optimizer_lr=5e-4)
-
-    adversarial_examples=adversary(mnist_net,input,target,to_numpy=False)
+    
+    adversary = cw.L2Adversary(targeted=False, confidence=0.0, search_steps=10, c_range=(1e-3, 1e10), box=input_box,
+                                   optimizer_lr=5e-3)
+    '''
+    adversary=PGD(min=input_box[0],max=input_box[1],random_start=True).forward
+    '''
+    adversarial_examples=adversary(mnist_net,input,target)
 
     fig, ax=plt.subplots(4,int(batch_size/4))
 
