@@ -4,11 +4,13 @@ from pgd import PGD
 from torchvision import datasets, transforms
 import torch
 import argparse
+from ensemble_classifier import EnsembleClassifier
 import matplotlib.pyplot as plt
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(description='Create Adversarial Examples')
     parser.add_argument('--saved_model', type=str,default='./mnist.pt')
-
+    parser.add_argument('--saved_model2', type=str,default='None')
+    parser.add_argument('--saved_model3', type=str, default='None' )
     args=parser.parse_args()
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     batch_size=16
@@ -28,8 +30,17 @@ if __name__ == '__main__':
     mnist_net=mnist_net.to(device)
 
     mnist_net.load_state_dict(torch.load(saved_model))
+    if(args.saved_model2!='None' and args.saved_model3!='None'):
+        model2=Net()
+        model3=Net()
+        model2, model3= model2.to(device), model3.to(device)
+
+        new_ensemble=EnsembleClassifier(mnist_net,model2,model3)
+
+        mnist_net=new_ensemble
 
     #input, target=next(iter(test_loader))
+    adv_percentage=0
     percentage=0
     mnist_net.eval()
     for batch_id, (input, target) in enumerate(test_loader):
@@ -39,6 +50,10 @@ if __name__ == '__main__':
         #print(input.shape)
         out=mnist_net(input)
         max_conf, labels=torch.max(out.detach(),dim=1)
+        percentage+=torch.mean((labels!=target).float()).item()
+        #print(labels)
+
+
         #print("Max")
         max=input[:].max()
         min=input[:].min()
@@ -68,9 +83,9 @@ if __name__ == '__main__':
 
         max_conf, labels = torch.max(out.detach(), dim=1)
         #fig, ax = plt.subplots(4, int(batch_size / 4))
-        percentage+=torch.mean((labels!=target).float()).item()
+        adv_percentage+=torch.mean((labels!=target).float()).item()
         #print(labels)
-        print("Adversarial Percentage="+str(percentage/(batch_id+1)))
+        print("Adversarial Percentage="+str(adv_percentage/(batch_id+1))+' Percentage on Original Distribution='+str(percentage/(batch_id+1)))
         
         '''
         for i in range(4):
