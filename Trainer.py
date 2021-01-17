@@ -31,7 +31,9 @@ class Trainer(object):
             if adversarial:
                 if(batch_idx>len(train_loader)*0.3):
                   break
+                model.eval()
                 data = adversary(model, data, target)
+                model.train()
                 data = data.to(device)
                 #print("Adversarial Training Batch Id=" + str(batch_idx))
             optimizer.zero_grad()

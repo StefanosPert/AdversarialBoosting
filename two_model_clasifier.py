@@ -26,9 +26,9 @@ class TwoModelClassifier(nn.Module):
             soft_out1=F.softmax(out1,dim=1)
             soft_out2=F.softmax(out2,dim=1)
 
+            #result=(soft_out1-soft_out2)
             inner_out=torch.sum(soft_out1*soft_out2,dim=1)
-
-            result=torch.cat([1-inner_out,inner_out],dim=1)
+            result=torch.log(torch.stack([1-inner_out,inner_out],dim=1))
 
         else:
             result=(out1,out2)

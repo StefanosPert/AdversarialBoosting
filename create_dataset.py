@@ -21,17 +21,18 @@ def regular_adversary_checker(model,data,target,adversary,device='cuda'):
     return index_mask, adversarial_examples
 
 def difference_checker(model,data,target,adversary,device='cuda'):
-    new_target=torch.ones(data.shape[0],device=device)
+    new_target=torch.ones(data.shape[0],device=device).long()
     adversarial_examples = adversary(model, data, new_target)
 
     out1,out2=model(adversarial_examples.to(device),inner_product=False)
-
+    #print(F.softmax(out1))
+    #print(F.softmax(out2))
     _,labels1=torch.max(out1.detach(),dim=1)
     _,labels2=torch.max(out2.detach(),dim=1)
     index_mask=labels1!=labels2
 
-    return index_mask
-def create_adv(model,adversary,loader,adversary_checker,logdir='./adv_check',device='cuda'):
+    return index_mask, adversarial_examples
+def create_adv(model,adversary,loader,adversary_checker,logdir='./adv_check',device='cuda',half_original=True):
     image_list=[]
     label_list=[]
     model.eval()
@@ -48,21 +49,23 @@ def create_adv(model,adversary,loader,adversary_checker,logdir='./adv_check',dev
             image_list.append(adv_data)
             label_list.append(adv_labels)
             print("Average adversarial in batch ="+str(torch.mean(indexes.float()).item()))
+        else:
+            print("Zero adversarial in batch")
         cnt+=1
         #if(cnt>10):
         #    break
     adversarial_tensor=torch.cat(image_list,dim=0)
     adversarial_length=adversarial_tensor.shape[0]
     del adversarial_tensor
-
-    total_samples=0
-    for data, target in loader:
-        data, target=data.to(device), target.to(device)
-        total_samples+=data.shape[0]
-        image_list.append(data.to('cpu'))
-        label_list.append(target.to('cpu'))
-        if(total_samples>adversarial_length):
-            break
+    if(half_original):
+        total_samples=0
+        for data, target in loader:
+            data, target=data.to(device), target.to(device)
+            total_samples+=data.shape[0]
+            image_list.append(data.to('cpu'))
+            label_list.append(target.to('cpu'))
+            if(total_samples>adversarial_length):
+                break
 
     save_data={'data_tensor': torch.cat(image_list,dim=0),
                 'label_tensor': torch.cat(label_list,dim=0)}
@@ -103,14 +106,16 @@ if __name__== '__main__':
 
     if args.set_second_model=='None':
         adversary_checker=regular_adversary_checker
+        half_original=True
     else:
         model2=Net()
         model2=model2.to(device)
-        model2.load_state_dict(torch.load(args.saved_model))
+        model2.load_state_dict(torch.load(args.set_second_model))
 
         new_model=TwoModelClassifier(model,model2)
-
+        model=new_model
         adversary_checker=difference_checker
+        half_original=False
 
-    create_adv(model,adversary,train_loader,adversary_checker,logdir=args.logdir)
+    create_adv(model,adversary,train_loader,adversary_checker,logdir=args.logdir, half_original=half_original)
 

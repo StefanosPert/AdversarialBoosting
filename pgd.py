@@ -27,8 +27,7 @@ class PGD(object):
         self.model=model
         images = images.clone().detach().to(self.device)
         labels = labels.clone().detach().to(self.device)
-        #labels = self._transform_label(images, labels)
-
+        #labels = self._transform_label(images, labels)    
         loss = nn.NLLLoss()
 
         adv_images = images.clone().detach()
@@ -41,7 +40,8 @@ class PGD(object):
         for i in range(self.steps):
             adv_images.requires_grad = True
             outputs = self.model(adv_images)
-
+            #print(outputs)
+            
             cost = -loss(outputs, labels)
 
             grad = torch.autograd.grad(cost, adv_images,
@@ -50,5 +50,5 @@ class PGD(object):
             adv_images = adv_images.detach() - self.alpha * grad.sign()
             delta = torch.clamp(adv_images - images, min=-self.eps, max=self.eps)
             adv_images = torch.clamp(images + delta, min=self.min, max=self.max).detach()
-
+        #print(outputs)
         return adv_images

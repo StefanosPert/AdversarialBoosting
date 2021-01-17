@@ -34,7 +34,8 @@ if __name__ == '__main__':
         model2=Net()
         model3=Net()
         model2, model3= model2.to(device), model3.to(device)
-
+        model2.load_state_dict(torch.load(args.saved_model2))
+        model3.load_state_dict(torch.load(args.saved_model3))
         new_ensemble=EnsembleClassifier(mnist_net,model2,model3)
 
         mnist_net=new_ensemble
