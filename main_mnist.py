@@ -8,7 +8,7 @@ from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 from Trainer import Trainer
 import cw
-
+from torch.utils.data import TensorDataset
 
 class Net(nn.Module):
     def __init__(self):
@@ -20,7 +20,7 @@ class Net(nn.Module):
         self.fc1 = nn.Linear(9216, 128)
         self.fc2 = nn.Linear(128, 10)
 
-    def forward(self, x):
+    def forward(self, x,out_log_softmax=True):
         x = self.conv1(x)
         x = F.relu(x)
         x = self.conv2(x)
@@ -32,7 +32,11 @@ class Net(nn.Module):
         x = F.relu(x)
         x = self.dropout2(x)
         x = self.fc2(x)
-        output = F.log_softmax(x, dim=1)
+        if(out_log_softmax):
+            output = F.log_softmax(x, dim=1)
+        else:
+            output=x
+
         return output
 
 
@@ -101,6 +105,7 @@ def main():
     parser.add_argument('--save-model', action='store_true', default=False,
                         help='For Saving the current Model')
     parser.add_argument('--logdir',type=str,default='./mnist.pt')
+    parser.add_argument('--custom_dataset',type=str,default='None')
     args = parser.parse_args()
     use_cuda = not args.no_cuda and torch.cuda.is_available()
 
@@ -121,8 +126,14 @@ def main():
         transforms.ToTensor(),
         transforms.Normalize((0.1307,), (0.3081,))
         ])
-    dataset1 = datasets.MNIST('./data', train=True, download=True,
+    if (args.custom_dataset=='None'):
+        dataset1 = datasets.MNIST('./data', train=True, download=True,
                        transform=transform)
+    else:
+        saved_data=torch.load(args.custom_dataset)
+        data=saved_data['data_tensor']
+        targets=saved_data['label_tensor']
+        dataset1=TensorDataset(data,targets)
     dataset2 = datasets.MNIST('./data', train=False,
                        transform=transform)
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)

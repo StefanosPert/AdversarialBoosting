@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 class PGD(object):
 
-    def __init__(self,  eps=0.2, alpha=2 / 255, steps=200, min=0,max=1,random_start=False,device='cuda'):
+    def __init__(self,  eps=0.35, alpha=2 / 255, steps=400, min=0,max=1,random_start=False,device='cuda'):
         self.device=device
         self.eps = eps
         self.alpha = alpha
@@ -29,7 +29,7 @@ class PGD(object):
         labels = labels.clone().detach().to(self.device)
         #labels = self._transform_label(images, labels)
 
-        loss = nn.CrossEntropyLoss()
+        loss = nn.NLLLoss()
 
         adv_images = images.clone().detach()
 

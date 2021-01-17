@@ -7,6 +7,7 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 import cw
+from pgd import PGD
 from tqdm import tqdm
 
 class Trainer(object):
@@ -18,8 +19,8 @@ class Trainer(object):
         self.num_epochs=num_epochs
         self.start_adversarial=start_adversarial
         input_box = (-0.1307 / 0.3081, (1 - 0.1307) / 0.3081)
-        self.adversary = cw.L2Adversary(targeted=False, confidence=0.0, search_steps=10, c_range=(1e-3, 1e10), box=input_box,
-                                   optimizer_lr=5e-3)
+        #self.adversary = cw.L2Adversary(targeted=False, confidence=0.0, search_steps=10, c_range=(1e-3, 1e10), box=input_box, optimizer_lr=5e-3)
+        self.adversary=PGD(min=input_box[0],max=input_box[1],random_start=True).forward 
         self.logdir=logdir
 
 
@@ -28,9 +29,9 @@ class Trainer(object):
         for batch_idx, (data, target) in enumerate(tqdm(train_loader)):
             data, target = data.to(device), target.to(device)
             if adversarial:
-                if(batch_idx>len(train_loader)*0.1):
+                if(batch_idx>len(train_loader)*0.3):
                   break
-                data = adversary(model, data, target, to_numpy=False)
+                data = adversary(model, data, target)
                 data = data.to(device)
                 #print("Adversarial Training Batch Id=" + str(batch_idx))
             optimizer.zero_grad()
@@ -77,5 +78,5 @@ class Trainer(object):
             self.test(self.model, self.device, self.test_loader)
             scheduler.step()
 
-        if args.save_model:
-            torch.save(self.model.state_dict(), self.logdir)
+        
+        torch.save(self.model.state_dict(), self.logdir)
