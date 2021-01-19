@@ -1,7 +1,9 @@
 from main_mnist import Net
 import cw
 from pgd import PGD
+import torchvision
 from torchvision import datasets, transforms
+from torch.utils.tensorboard import SummaryWriter
 import torch
 import argparse
 from ensemble_classifier import EnsembleClassifier
@@ -28,7 +30,7 @@ if __name__ == '__main__':
 
     mnist_net=Net()
     mnist_net=mnist_net.to(device)
-
+    writer=SummaryWriter('./logs')
     mnist_net.load_state_dict(torch.load(saved_model))
     if(args.saved_model2!='None' and args.saved_model3!='None'):
         model2=Net()
@@ -40,7 +42,7 @@ if __name__ == '__main__':
 
         mnist_net=new_ensemble
 
-    #input, target=next(iter(test_loader))
+   
     adv_percentage=0
     percentage=0
     mnist_net.eval()
@@ -67,34 +69,12 @@ if __name__ == '__main__':
         adversary=PGD(min=input_box[0],max=input_box[1],random_start=True).forward
     
         adversarial_examples=adversary(mnist_net,input,target)
-        '''
-        fig, ax=plt.subplots(4,int(batch_size/4))
-
-        #print(labels)
-        for i in range(4):
-            for j in range(int(batch_size/4)):
-                ax[i,j].imshow(input[i*4+j,0,:,:].to('cpu'),cmap='gray')
-                ax[i,j].set_title('Cat: '+str(labels[i*4+j].item()))
-                ax[i,j].get_xaxis().set_visible(False)
-                ax[i, j].get_yaxis().set_visible(False)
-
-        plt.show()
-        '''
+       
         out=mnist_net(adversarial_examples.to(device))
 
         max_conf, labels = torch.max(out.detach(), dim=1)
-        #fig, ax = plt.subplots(4, int(batch_size / 4))
+        
         adv_percentage+=torch.mean((labels!=target).float()).item()
-        #print(labels)
+        
         print("Adversarial Percentage="+str(adv_percentage/(batch_id+1))+' Percentage on Original Distribution='+str(percentage/(batch_id+1)))
         
-        '''
-        for i in range(4):
-            for j in range(int(batch_size/4)):
-                ax[i,j].imshow(adversarial_examples[i*4+j,0,:,:].to('cpu'),cmap='gray')
-                ax[i,j].set_title('Cat: '+str(labels[i*4+j].item()))
-                ax[i,j].get_xaxis().set_visible(False)
-                ax[i, j].get_yaxis().set_visible(False)
-
-        plt.show()
-        '''
