@@ -1,5 +1,7 @@
-## This is a repository for the project for CIS 625
+## Adversarial Robustness in Model Ensemble
+This repository provides the code for the following technical report "Adversarial Robustness in Model Ensembles" which can be found [here](https://stefanospert.github.io/data/AdversarialBoosting.pdf)
 
+### Training the robust ensemble
 In order to train the ensemble of model to MNIST run the following bash script
 ```
 ./training.sh
